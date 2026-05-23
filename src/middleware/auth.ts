@@ -30,14 +30,18 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const requireMaintainer = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    throw new UnauthorizedError('User not authenticated');
-  }
+export const requireRole = (...roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      throw new UnauthorizedError('User not authenticated');
+    }
 
-  if (req.user.role !== 'maintainer') {
-    throw new ForbiddenError('Maintainer access required');
-  }
+    if (!roles.includes(req.user.role)) {
+      throw new ForbiddenError('Insufficient permissions');
+    }
 
-  next();
+    next();
+  };
 };
+
+export const requireMaintainer = requireRole('maintainer');
