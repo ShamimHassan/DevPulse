@@ -2,10 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import pool from '../../config/database';
-import { successResponse } from '../../utils/response';
-import { BadRequestError, ConflictError, UnauthorizedError } from '../../utils/errors';
-import { UserRequest, User, LoginRequest, JwtPayload } from '../../types';
+import pool from '../../../config/database';
+import { successResponse } from '../../../utils/response';
+import { BadRequestError, ConflictError, UnauthorizedError } from '../../../utils/errors';
+import { UserRequest, User, LoginRequest, JwtPayload } from '../../../types';
 
 dotenv.config();
 const SALT_ROUNDS = 10;

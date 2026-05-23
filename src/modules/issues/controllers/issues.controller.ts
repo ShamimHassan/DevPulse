@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import pool from '../../config/database';
-import { successResponse } from '../../utils/response';
-import { BadRequestError, NotFoundError } from '../../utils/errors';
-import { CreateIssueRequest, Issue, IssueWithReporter, User } from '../../types';
+import pool from '../../../config/database';
+import { successResponse } from '../../../utils/response';
+import { BadRequestError, NotFoundError } from '../../../utils/errors';
+import { CreateIssueRequest, Issue, IssueWithReporter, User } from '../../../types';
 
 export const createIssue = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -96,6 +96,36 @@ export const getAllIssues = async (req: Request, res: Response, next: NextFuncti
     });
 
     res.status(200).json(successResponse(issuesWithReporters));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getSingleIssue = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const issueResult = await pool.query('SELECT * FROM issues WHERE id = $1', [id]);
+    if (issueResult.rows.length === 0) {
+      throw new NotFoundError('Issue not found');
+    }
+
+    const issue: Issue = issueResult.rows[0];
+
+    const reporterResult = await pool.query(
+      'SELECT id, name, role FROM users WHERE id = $1',
+      [issue.reporter_id]
+    );
+
+    const reporter = reporterResult.rows[0] || { id: issue.reporter_id, name: 'Unknown', role: 'contributor' };
+
+    const { reporter_id, ...issueWithoutReporterId } = issue;
+    const issueWithReporter: IssueWithReporter = {
+      ...issueWithoutReporterId,
+      reporter
+    };
+
+    res.status(200).json(successResponse(issueWithReporter));
   } catch (error) {
     next(error);
   }
