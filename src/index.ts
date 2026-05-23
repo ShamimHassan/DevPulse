@@ -17,7 +17,15 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/issues', issuesRoutes);
 
-app.use('*', (req, res, next) => {
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Welcome to DevPulse',
+    email: 'devpulse@gmail.com',
+    author: 'Md Shamim Hassan'
+  });
+});
+
+app.use((req, res, next) => {
   throw new NotFoundError('Route not found');
 });
 

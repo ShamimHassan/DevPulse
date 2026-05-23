@@ -27,8 +27,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_issues_updated_at ON issues;
 CREATE TRIGGER update_issues_updated_at BEFORE UPDATE ON issues
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
