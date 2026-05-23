@@ -43,6 +43,5 @@ server.log
 .cache/
 
 # Markdown files
-*.md
 
 .vercel
