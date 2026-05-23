@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import pool from '../../../config/database';
 import { successResponse } from '../../../utils/response';
-import { BadRequestError, NotFoundError } from '../../../utils/errors';
-import { CreateIssueRequest, Issue, IssueWithReporter, User } from '../../../types';
+import { BadRequestError, NotFoundError, ForbiddenError, ConflictError } from '../../../utils/errors';
+import { CreateIssueRequest, UpdateIssueRequest, Issue, IssueWithReporter, User } from '../../../types';
 
 export const createIssue = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -126,6 +126,76 @@ export const getSingleIssue = async (req: Request, res: Response, next: NextFunc
     };
 
     res.status(200).json(successResponse(issueWithReporter));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateIssue = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { title, description, type }: UpdateIssueRequest = req.body;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    const issueResult = await pool.query('SELECT * FROM issues WHERE id = $1', [id]);
+    if (issueResult.rows.length === 0) {
+      throw new NotFoundError('Issue not found');
+    }
+
+    const issue: Issue = issueResult.rows[0];
+
+    if (userRole !== 'maintainer') {
+      if (issue.reporter_id !== userId) {
+        throw new ForbiddenError('You can only update your own issues');
+      }
+      if (issue.status !== 'open') {
+        throw new ConflictError('You can only update open issues');
+      }
+    }
+
+    const updates: string[] = [];
+    const params: any[] = [];
+    let paramCount = 0;
+
+    if (title !== undefined) {
+      if (title.length > 150) {
+        throw new BadRequestError('Title must be 150 characters or less');
+      }
+      paramCount++;
+      updates.push(`title = $${paramCount}`);
+      params.push(title);
+    }
+
+    if (description !== undefined) {
+      if (description.length < 20) {
+        throw new BadRequestError('Description must be at least 20 characters');
+      }
+      paramCount++;
+      updates.push(`description = $${paramCount}`);
+      params.push(description);
+    }
+
+    if (type !== undefined) {
+      if (type !== 'bug' && type !== 'feature_request') {
+        throw new BadRequestError('Type must be either bug or feature_request');
+      }
+      paramCount++;
+      updates.push(`type = $${paramCount}`);
+      params.push(type);
+    }
+
+    if (updates.length === 0) {
+      throw new BadRequestError('No valid fields to update');
+    }
+
+    paramCount++;
+    params.push(id);
+    const query = `UPDATE issues SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+    const result = await pool.query(query, params);
+    const updatedIssue: Issue = result.rows[0];
+
+    res.status(200).json(successResponse(updatedIssue, 'Issue updated successfully'));
   } catch (error) {
     next(error);
   }
