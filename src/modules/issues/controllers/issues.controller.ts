@@ -200,3 +200,20 @@ export const updateIssue = async (req: Request, res: Response, next: NextFunctio
     next(error);
   }
 };
+
+export const deleteIssue = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const issueResult = await pool.query('SELECT * FROM issues WHERE id = $1', [id]);
+    if (issueResult.rows.length === 0) {
+      throw new NotFoundError('Issue not found');
+    }
+
+    await pool.query('DELETE FROM issues WHERE id = $1', [id]);
+
+    res.status(200).json(successResponse(undefined, 'Issue deleted successfully'));
+  } catch (error) {
+    next(error);
+  }
+};
